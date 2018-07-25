@@ -91,7 +91,7 @@ class IrLazyClass(
 
     override val typeParameters: MutableList<IrTypeParameter> by lazy {
         descriptor.declaredTypeParameters.mapTo(arrayListOf()) {
-            stubGenerator.generateTypeParameterStub(it)
+            stubGenerator.generateOrGetTypeParameterStub(it)
         }
     }
 
