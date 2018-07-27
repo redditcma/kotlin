@@ -35,8 +35,20 @@ abstract class IrLazyFunctionBase(
     IrFunction {
 
     override val typeParameters: MutableList<IrTypeParameter> by lazy {
-        descriptor.propertyIfAccessor.typeParameters.mapTo(arrayListOf()) {
-            stubGenerator.generateOrGetTypeParameterStub(it)
+        TypeTranslator.buildWithScope(this) {
+            stubGenerator.symbolTable.enterScope(descriptor)
+            val propertyIfAccessor = descriptor.propertyIfAccessor
+            propertyIfAccessor.typeParameters.mapTo(arrayListOf()) {
+                if (descriptor != propertyIfAccessor) {
+                    stubGenerator.generateOrGetScopedTypeParameterStub(it).also {
+                        it.parent = this@IrLazyFunctionBase
+                    }
+                } else {
+                    stubGenerator.generateOrGetTypeParameterStub(it)
+                }
+            }.also {
+                stubGenerator.symbolTable.leaveScope(descriptor)
+            }
         }
     }
 

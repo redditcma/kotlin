@@ -90,7 +90,7 @@ class FunctionGenerator(declarationGenerator: DeclarationGenerator) : Declaratio
         ktParameterOwner: KtElement?,
         ktReceiverParameterElement: KtElement?
     ) {
-        declarationGenerator.generateGlobalTypeParametersDeclarations(irFunction, irFunction.descriptor.typeParameters)
+        declarationGenerator.generateScopedTypeParameterDeclarations(irFunction, irFunction.descriptor.typeParameters)
         irFunction.returnType = irFunction.descriptor.returnType!!.toIrType()
         generateValueParameterDeclarations(irFunction, ktParameterOwner, ktReceiverParameterElement)
     }
@@ -105,6 +105,7 @@ class FunctionGenerator(declarationGenerator: DeclarationGenerator) : Declaratio
             ktAccessor ?: ktProperty,
             if (ktAccessor != null) IrDeclarationOrigin.DEFINED else IrDeclarationOrigin.DEFAULT_PROPERTY_ACCESSOR
         ).buildWithScope { irAccessor ->
+            declarationGenerator.generateScopedTypeParameterDeclarations(irAccessor, descriptor.correspondingProperty.typeParameters)
             irAccessor.returnType = irAccessor.descriptor.returnType!!.toIrType()
             generateValueParameterDeclarations(irAccessor, ktAccessor ?: ktProperty, ktProperty.receiverTypeReference)
             val ktBodyExpression = ktAccessor?.bodyExpression
@@ -120,6 +121,7 @@ class FunctionGenerator(declarationGenerator: DeclarationGenerator) : Declaratio
         ktParameter: KtParameter
     ): IrSimpleFunction =
         declareSimpleFunctionInner(descriptor, ktParameter, IrDeclarationOrigin.DEFAULT_PROPERTY_ACCESSOR).buildWithScope { irAccessor ->
+            declarationGenerator.generateScopedTypeParameterDeclarations(irAccessor, descriptor.correspondingProperty.typeParameters)
             irAccessor.returnType = descriptor.returnType!!.toIrType()
             FunctionGenerator(declarationGenerator).generateSyntheticFunctionParameterDeclarations(irAccessor)
             irAccessor.body = generateDefaultAccessorBody(ktParameter, descriptor, irAccessor)

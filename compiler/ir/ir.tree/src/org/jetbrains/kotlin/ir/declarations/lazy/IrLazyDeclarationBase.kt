@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.DeclarationStubGenerator
 import org.jetbrains.kotlin.ir.util.TypeTranslator
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -28,7 +29,10 @@ abstract class IrLazyDeclarationBase(
     protected val TypeTranslator: TypeTranslator
 ) : IrElementBase(startOffset, endOffset), IrDeclaration {
 
-    protected fun KotlinType.toIrType() = TypeTranslator.translateType(this)
+    protected fun KotlinType.toIrType(): IrType {
+
+        return TypeTranslator.translateType(this)
+    }
 
     protected fun ReceiverParameterDescriptor.generateReceiverParameterStub(): IrValueParameter =
         IrValueParameterImpl(
@@ -61,6 +65,7 @@ abstract class IrLazyDeclarationBase(
                 it.declarations.add(this)
             }
             is ClassDescriptor -> stubGenerator.generateClassStub(containingDeclaration)
+            is FunctionDescriptor -> stubGenerator.generateFunctionStub(containingDeclaration)
             else ->
                 if (currentDescriptor is PropertyAccessorDescriptor &&
                     currentDescriptor.kind == CallableMemberDescriptor.Kind.SYNTHESIZED &&

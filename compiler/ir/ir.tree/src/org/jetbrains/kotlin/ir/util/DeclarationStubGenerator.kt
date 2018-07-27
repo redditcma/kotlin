@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.impl.IrEnumEntryImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrModuleFragmentImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
@@ -41,10 +42,10 @@ class DeclarationStubGenerator(
 
     internal var unboundSymbolGeneration: Boolean
         get() = lazyTable.stubGenerator != null
-        set(value) { lazyTable.stubGenerator = this }
+        set(value) { lazyTable.stubGenerator = if (value)  this else null }
 
 
-    private val typeTranslator = TypeTranslator(lazyTable, languageVersionSettings, LazyScopedTypeParametersResolver(lazyTable))
+    private val typeTranslator = TypeTranslator(lazyTable, languageVersionSettings, LazyScopedTypeParametersResolver(lazyTable), true)
     private val constantValueGenerator = ConstantValueGenerator(moduleDescriptor, lazyTable)
 
     init {
@@ -101,13 +102,13 @@ class DeclarationStubGenerator(
             return referenced.owner
         }
 
+        val origin =
+                if (descriptor.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE)
+                    IrDeclarationOrigin.FAKE_OVERRIDE
+                else origin
         return symbolTable.declareSimpleFunction(
             UNDEFINED_OFFSET, UNDEFINED_OFFSET,
-            if (descriptor.kind == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-                IrDeclarationOrigin.FAKE_OVERRIDE
-            } else {
-                origin
-            },
+                origin,
             descriptor.original
         ) { IrLazyFunction(UNDEFINED_OFFSET, UNDEFINED_OFFSET, origin, it, this, typeTranslator) }
     }
@@ -157,7 +158,9 @@ class DeclarationStubGenerator(
         if (referenced.isBound) {
             return referenced.owner
         }
-        return symbolTable.declareEnumEntry(UNDEFINED_OFFSET, UNDEFINED_OFFSET, origin, descriptor)
+        return symbolTable.declareEnumEntry(UNDEFINED_OFFSET, UNDEFINED_OFFSET, origin, descriptor) {
+            IrLazyEnumEntryImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, origin, it, this, typeTranslator)
+        }
     }
 
     internal fun generateOrGetTypeParameterStub(descriptor: TypeParameterDescriptor): IrTypeParameter {
@@ -169,6 +172,19 @@ class DeclarationStubGenerator(
             IrLazyTypeParameter(
                 UNDEFINED_OFFSET, UNDEFINED_OFFSET, origin,
                 it, this, typeTranslator
+            )
+        }
+    }
+
+    internal fun generateOrGetScopedTypeParameterStub(descriptor: TypeParameterDescriptor): IrTypeParameter {
+        val referenced = symbolTable.referenceTypeParameter(descriptor)
+        if (referenced.isBound) {
+            return referenced.owner
+        }
+        return symbolTable.declareScopedTypeParameter(UNDEFINED_OFFSET, UNDEFINED_OFFSET, origin, descriptor) {
+            IrLazyTypeParameter(
+                    UNDEFINED_OFFSET, UNDEFINED_OFFSET, origin,
+                    it, this, typeTranslator
             )
         }
     }

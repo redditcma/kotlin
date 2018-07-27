@@ -28,6 +28,18 @@ class LazyScopedTypeParametersResolver(private val symbolTable: ReferenceSymbolT
     }
 
     override fun resolveScopedTypeParameter(typeParameterDescriptor: TypeParameterDescriptor): IrTypeParameterSymbol? {
-        return symbolTable.referenceTypeParameter(typeParameterDescriptor)
+        return typeParameterScopes.firstOrNull()?.let { parent ->
+            parent.typeParameters.firstOrNull {
+                it.descriptor == typeParameterDescriptor
+            }?.symbol
+        } ?: null
     }
+
+    private fun calcParent(container: IrTypeParametersContainer): IrTypeParametersContainer? {
+        return when(container) {
+            is IrClass -> if (container.isObject || !container.isInner) null else container.parent
+            else -> (container as? IrDeclaration)?.parent
+        } as? IrTypeParametersContainer
+    }
+
 }

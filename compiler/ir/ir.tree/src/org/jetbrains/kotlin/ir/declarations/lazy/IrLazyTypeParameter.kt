@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.ir.declarations.lazy
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
+import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.DeclarationStubGenerator
@@ -54,8 +55,10 @@ class IrLazyTypeParameter(
     }
 
     override val superTypes: MutableList<IrType> by lazy {
-        val descriptor = symbol.descriptor
-        descriptor.upperBounds.mapTo(arrayListOf()) { it.toIrType() }
+        TypeTranslator.buildWithScope(this.parent as IrTypeParametersContainer) {
+            val descriptor = symbol.descriptor
+            descriptor.upperBounds.mapTo(arrayListOf()) { it.toIrType() }
+        }
     }
 
     override fun <R, D> accept(visitor: IrElementVisitor<R, D>, data: D): R =

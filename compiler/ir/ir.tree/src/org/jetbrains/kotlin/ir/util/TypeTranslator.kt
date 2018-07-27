@@ -24,7 +24,8 @@ import org.jetbrains.kotlin.types.typesApproximation.approximateCapturedTypes
 class TypeTranslator(
     private val symbolTable: ReferenceSymbolTable,
     val languageVersionSettings: LanguageVersionSettings,
-    private val typeParametersResolver: TypeParametersResolver = ScopedTypeParametersResolver()
+    private val typeParametersResolver: TypeParametersResolver = ScopedTypeParametersResolver(),
+    private val enterTableScope: Boolean = false
 ) {
 
     private val typeApproximatorForNI = TypeApproximator()
@@ -33,16 +34,22 @@ class TypeTranslator(
 
     fun enterScope(irElement: IrTypeParametersContainer) {
         typeParametersResolver.enterTypeParameterScope(irElement)
+        if(enterTableScope) {
+            symbolTable.enterScope(irElement.descriptor)
+        }
     }
 
-    fun leaveScope() {
+    fun leaveScope(irElement: IrTypeParametersContainer) {
         typeParametersResolver.leaveTypeParameterScope()
+        if(enterTableScope) {
+            symbolTable.leaveScope(irElement.descriptor)
+        }
     }
 
     inline fun <T> buildWithScope(container: IrTypeParametersContainer, builder: () -> T): T {
         enterScope(container)
         val result = builder()
-        leaveScope()
+        leaveScope(container)
         return result
     }
 
