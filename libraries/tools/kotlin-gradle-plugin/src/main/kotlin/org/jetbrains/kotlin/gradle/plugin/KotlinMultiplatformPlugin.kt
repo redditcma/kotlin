@@ -17,7 +17,10 @@
 package org.jetbrains.kotlin.gradle.plugin
 
 import com.android.build.gradle.BaseExtension
-import org.gradle.api.*
+import org.gradle.api.GradleException
+import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.SourceDirectorySet
@@ -151,7 +154,7 @@ open class KotlinPlatformImplementationPluginBase(platformName: String) : Kotlin
             .filterIsInstance<AbstractKotlinCompile<*>>()
             .firstOrNull { it.sourceSetName == commonSourceSet.name }
 
-        platformTask?.source(commonSourceSet.kotlin!!)
+        platformTask?.commonSourceSet = commonSourceSet.kotlin!!
     }
 
     protected val SourceSet.kotlin: SourceDirectorySet?
